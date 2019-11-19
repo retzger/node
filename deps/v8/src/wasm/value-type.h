@@ -109,7 +109,8 @@ class LoadType {
 
   static constexpr uint8_t kLoadSizeLog2[] = {
 #define LOAD_SIZE(_, __, memtype) \
-  ElementSizeLog2Of(MachineType::memtype().representation()),
+  static_cast<uint8_t>(           \
+      ElementSizeLog2Of(MachineType::memtype().representation())),
       FOREACH_LOAD_TYPE(LOAD_SIZE)
 #undef LOAD_SIZE
   };
@@ -177,7 +178,8 @@ class StoreType {
 
   static constexpr uint8_t kStoreSizeLog2[] = {
 #define STORE_SIZE(_, __, memrep) \
-  ElementSizeLog2Of(MachineRepresentation::k##memrep),
+  static_cast<uint8_t>(           \
+      ElementSizeLog2Of(MachineRepresentation::k##memrep)),
       FOREACH_STORE_TYPE(STORE_SIZE)
 #undef STORE_SIZE
   };
