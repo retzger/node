@@ -30,6 +30,7 @@ class JSArrayBufferView;
 }  // namespace internal
 
 namespace debug {
+class AccessorPair;
 class GeneratorObject;
 class Script;
 class WeakMap;
@@ -127,6 +128,7 @@ class RegisteredExtension {
   V(debug::GeneratorObject, JSGeneratorObject) \
   V(debug::Script, Script)                     \
   V(debug::WeakMap, JSWeakMap)                 \
+  V(debug::AccessorPair, AccessorPair)         \
   V(Promise, JSPromise)                        \
   V(Primitive, Object)                         \
   V(PrimitiveArray, FixedArray)                \
@@ -143,6 +145,8 @@ class Utils {
   static void ReportOOMFailure(v8::internal::Isolate* isolate,
                                const char* location, bool is_heap_oom);
 
+  static inline Local<debug::AccessorPair> ToLocal(
+      v8::internal::Handle<v8::internal::AccessorPair> obj);
   static inline Local<Context> ToLocal(
       v8::internal::Handle<v8::internal::Context> obj);
   static inline Local<Value> ToLocal(
@@ -557,17 +561,6 @@ void InvokeAccessorGetterCallback(
 
 void InvokeFunctionCallback(const v8::FunctionCallbackInfo<v8::Value>& info,
                             v8::FunctionCallback callback);
-
-class Testing {
- public:
-  static v8::Testing::StressType stress_type() { return stress_type_; }
-  static void set_stress_type(v8::Testing::StressType stress_type) {
-    stress_type_ = stress_type;
-  }
-
- private:
-  static v8::Testing::StressType stress_type_;
-};
 
 }  // namespace internal
 }  // namespace v8

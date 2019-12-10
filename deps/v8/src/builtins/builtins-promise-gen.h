@@ -46,11 +46,6 @@ class V8_EXPORT_PRIVATE PromiseBuiltinsAssembler : public CodeStubAssembler {
       TNode<JSPromise> promise_to_resolve, TNode<JSReceiver> then,
       TNode<JSReceiver> thenable, TNode<Context> context);
 
-  std::pair<TNode<JSFunction>, TNode<JSFunction>>
-  CreatePromiseResolvingFunctions(TNode<JSPromise> promise,
-                                  TNode<Object> debug_event,
-                                  TNode<NativeContext> native_context);
-
   Node* PromiseHasHandler(Node* promise);
 
   // Creates the context used by all Promise.all resolve element closures,
@@ -71,25 +66,23 @@ class V8_EXPORT_PRIVATE PromiseBuiltinsAssembler : public CodeStubAssembler {
       TNode<JSPromise> promise, TNode<Object> debug_event,
       TNode<NativeContext> native_context);
 
-  Node* CreatePromiseGetCapabilitiesExecutorContext(Node* promise_capability,
-                                                    Node* native_context);
-
- protected:
+  void BranchIfAccessCheckFailed(SloppyTNode<Context> context,
+                                 SloppyTNode<Context> native_context,
+                                 TNode<Object> promise_constructor,
+                                 TNode<Object> executor, Label* if_noaccess);
   void PromiseInit(Node* promise);
 
+  // We can shortcut the SpeciesConstructor on {promise_map} if it's
+  // [[Prototype]] is the (initial)  Promise.prototype and the @@species
+  // protector is intact, as that guards the lookup path for the "constructor"
+  // property on JSPromise instances which have the %PromisePrototype%.
+  void BranchIfPromiseSpeciesLookupChainIntact(
+      TNode<NativeContext> native_context, TNode<Map> promise_map,
+      Label* if_fast, Label* if_slow);
+
+ protected:
   void PromiseSetHasHandler(Node* promise);
   void PromiseSetHandledHint(Node* promise);
-
-  void PerformPromiseThen(TNode<Context> context, TNode<JSPromise> promise,
-                          TNode<HeapObject> on_fulfilled,
-                          TNode<HeapObject> on_rejected,
-                          TNode<HeapObject> result_promise_or_capability);
-
-  TNode<Context> CreatePromiseContext(TNode<NativeContext> native_context,
-                                      int slots);
-
-  Node* TriggerPromiseReactions(Node* context, Node* promise, Node* result,
-                                PromiseReaction::Type type);
 
   // We can skip the "resolve" lookup on {constructor} if it's the (initial)
   // Promise constructor and the Promise.resolve() protector is intact, as
@@ -101,14 +94,6 @@ class V8_EXPORT_PRIVATE PromiseBuiltinsAssembler : public CodeStubAssembler {
   void GotoIfNotPromiseResolveLookupChainIntact(Node* native_context,
                                                 SloppyTNode<Object> constructor,
                                                 Label* if_slow);
-
-  // We can shortcut the SpeciesConstructor on {promise_map} if it's
-  // [[Prototype]] is the (initial)  Promise.prototype and the @@species
-  // protector is intact, as that guards the lookup path for the "constructor"
-  // property on JSPromise instances which have the %PromisePrototype%.
-  void BranchIfPromiseSpeciesLookupChainIntact(Node* native_context,
-                                               Node* promise_map,
-                                               Label* if_fast, Label* if_slow);
 
   // We can skip the "then" lookup on {receiver_map} if it's [[Prototype]]
   // is the (initial) Promise.prototype and the Promise#then() protector
@@ -123,12 +108,7 @@ class V8_EXPORT_PRIVATE PromiseBuiltinsAssembler : public CodeStubAssembler {
   Node* CallResolve(Node* native_context, Node* constructor, Node* resolve,
                     Node* value, Label* if_exception, Variable* var_exception);
   template <typename... TArgs>
-  Node* InvokeThen(Node* native_context, Node* receiver, TArgs... args);
-
-  void BranchIfAccessCheckFailed(SloppyTNode<Context> context,
-                                 SloppyTNode<Context> native_context,
-                                 Node* promise_constructor, Node* executor,
-                                 Label* if_noaccess);
+  TNode<Object> InvokeThen(Node* native_context, Node* receiver, TArgs... args);
 
   std::pair<Node*, Node*> CreatePromiseFinallyFunctions(Node* on_finally,
                                                         Node* constructor,
@@ -142,12 +122,12 @@ class V8_EXPORT_PRIVATE PromiseBuiltinsAssembler : public CodeStubAssembler {
                                   TNode<NativeContext> native_context,
                                   TNode<PromiseCapability> capability)>;
 
-  Node* PerformPromiseAll(
+  TNode<Object> PerformPromiseAll(
       Node* context, Node* constructor, Node* capability,
       const TorqueStructIteratorRecord& record,
       const PromiseAllResolvingElementFunction& create_resolve_element_function,
       const PromiseAllResolvingElementFunction& create_reject_element_function,
-      Label* if_exception, Variable* var_exception);
+      Label* if_exception, TVariable<Object>* var_exception);
 
   void SetForwardingHandlerIfTrue(Node* context, Node* condition,
                                   const NodeGenerator& object);
@@ -167,8 +147,6 @@ class V8_EXPORT_PRIVATE PromiseBuiltinsAssembler : public CodeStubAssembler {
 
   TNode<BoolT> IsPromiseStatus(TNode<Word32T> actual,
                                v8::Promise::PromiseState expected);
-  void PromiseSetStatus(Node* promise, v8::Promise::PromiseState status);
-
   TNode<JSPromise> AllocateJSPromise(TNode<Context> context);
 
   void ExtractHandlerContext(Node* handler, Variable* var_context);

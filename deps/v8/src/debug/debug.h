@@ -61,6 +61,7 @@ enum IgnoreBreakMode {
 
 class BreakLocation {
  public:
+  static BreakLocation Invalid() { return BreakLocation(-1, NOT_DEBUG_BREAK); }
   static BreakLocation FromFrame(Handle<DebugInfo> debug_info,
                                  JavaScriptFrame* frame);
 
@@ -266,8 +267,6 @@ class V8_EXPORT_PRIVATE Debug {
                               int end_position, bool restrict_to_function,
                               std::vector<BreakLocation>* locations);
 
-  MaybeHandle<JSArray> GetPrivateFields(Handle<JSReceiver> receiver);
-
   bool IsBlackboxed(Handle<SharedFunctionInfo> shared);
 
   bool CanBreakAtEntry(Handle<SharedFunctionInfo> shared);
@@ -404,11 +403,11 @@ class V8_EXPORT_PRIVATE Debug {
   }
 
   void clear_suspended_generator() {
-    thread_local_.suspended_generator_ = Smi::kZero;
+    thread_local_.suspended_generator_ = Smi::zero();
   }
 
   bool has_suspended_generator() const {
-    return thread_local_.suspended_generator_ != Smi::kZero;
+    return thread_local_.suspended_generator_ != Smi::zero();
   }
 
   bool IsExceptionBlackboxed(bool uncaught);
